@@ -11,10 +11,15 @@ const isDisplayNone = (element: Element | undefined): boolean =>
 
 const isCommentGroupMinimized = (comment: HTMLElement): boolean =>
 	elementExists('.minimized-comment:not(.d-none)', comment)
+	// Review comments on Files tab
+	|| isDisplayNone(
+		comment.closest(['.js-file-content', '.js-file-level-comments-table'])
+		?? undefined,
+	)
 	|| Boolean(
 		closestElementOptional([
 			'.js-resolvable-thread-contents.d-none', // Regular comments
-			'details.js-resolvable-timeline-thread-container:not([open])', // Review comments
+			'details.js-resolvable-timeline-thread-container:not([open])', // Review comments on Conversation tab
 		], comment),
 	);
 
