@@ -1,3 +1,4 @@
+import './keyboard-navigation.css';
 
 import * as pageDetect from 'github-url-detection';
 import {$$, $optional, closestElementOptional, elementExists} from 'select-dom';
@@ -80,8 +81,34 @@ function runShortcuts(event: KeyboardEvent): void {
 	);
 
 	if (currentIndex !== chosenItemIndex) {
-		// Make item a target without pushing to history
-		location.replace('#' + items[chosenItemIndex].id);
+		const chosenItem = items[chosenItemIndex];
+		for (const item of items) {
+			if (item.classList.contains('details-collapsed-target')) {
+				item.classList.remove('details-collapsed-target');
+			}
+
+			if (item.classList.contains('not-target')) {
+				item.classList.remove('not-target');
+			}
+		}
+
+		if (
+			chosenItem.classList.contains('js-details-container')
+			&& isFileMinimized(chosenItem)
+		) {
+			// Change hash without focusing and expanding
+			globalThis.history.replaceState(
+				globalThis.history.state,
+				'',
+				'#' + chosenItem.id,
+			);
+			chosenItem.scrollIntoView();
+			chosenItem.classList.add('details-collapsed-target');
+			$optional(':target')?.classList.add('not-target');
+		} else {
+		  // Make item a target without pushing to history
+			location.replace('#' + chosenItem.id);
+		}
 	}
 }
 
