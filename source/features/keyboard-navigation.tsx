@@ -1,3 +1,4 @@
+import './keyboard-navigation.css';
 import {$, $$, elementExists} from 'select-dom';
 import * as pageDetect from 'github-url-detection';
 
@@ -8,17 +9,40 @@ const isCommentGroupMinimized = (comment: HTMLElement): boolean =>
 	elementExists('.minimized-comment:not(.d-none)', comment)
 	|| Boolean(comment.closest([
 		'.js-resolvable-thread-contents.d-none', // Regular comments
-		'details.js-resolvable-timeline-thread-container:not([open])', // Review comments
-	]));
+		'details.js-resolvable-timeline-thread-container:not([open])', // Review comments on Conversation tab
+	]) ||
+		isDisplayNone(comment.closest('.js-file-content')) // Review comments on Files tab
+	);
+
+const isDisplayNone = (element: Element | null | undefined) => element && getComputedStyle(element).display === 'none'
+
+const isFileMinimized = (element: HTMLElement | null): boolean =>
+	Boolean(element?.classList.contains('js-file') && isDisplayNone($('.js-file-content', element)))
 
 function runShortcuts(event: KeyboardEvent): void {
-	if ((event.key !== 'j' && event.key !== 'k') || isEditable(event.target)) {
+	if ((event.key !== 'j' && event.key !== 'k' && event.key !== 'x') || isEditable(event.target)) {
 		return;
 	}
 
 	event.preventDefault();
 
-	const focusedComment = $(':target')!;
+	const focusedComment = $(window.location.hash ? window.location.hash : ':target')!;
+
+	if (event.key === 'x') {
+		if (!focusedComment) {
+			return;
+		}
+		const toggle = $('.js-reviewed-toggle', focusedComment)
+		if (toggle) {
+			const wasFileMinimized = isFileMinimized(focusedComment);
+			toggle.click();
+			if (wasFileMinimized) {
+				location.replace('#' + focusedComment.id);
+			}
+		}
+		return;
+	}
+
 	const items
 		= $$([
 			'.js-targetable-element[id^="diff-"]', // Files in diffs
@@ -41,8 +65,25 @@ function runShortcuts(event: KeyboardEvent): void {
 	);
 
 	if (currentIndex !== chosenCommentIndex) {
-		// Focus comment without pushing to history
-		location.replace('#' + items[chosenCommentIndex].id);
+		const chosenComment = items[chosenCommentIndex];
+		for (const item of items) {
+			if (item.classList.contains('details-collapsed-target')) {
+				item.classList.remove('details-collapsed-target');
+			}
+			if (item.classList.contains('not-target')) {
+				item.classList.remove('not-target');
+			}
+		}
+		if (chosenComment.classList.contains('js-details-container') && isFileMinimized(chosenComment)) {
+			// Change hash without focusing and expanding
+			window.history.replaceState(window.history.state, '', '#' + chosenComment.id);
+			chosenComment.scrollIntoView();
+			chosenComment.classList.add('details-collapsed-target');
+			$(':target')?.classList.add('not-target');
+		} else {
+			// Focus comment without pushing to history
+			location.replace('#' + chosenComment.id);
+		}
 	}
 }
 
