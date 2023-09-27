@@ -21,7 +21,10 @@ const isFileMinimized = (element: HTMLElement | null): boolean =>
 
 let lastViewChange: HTMLElement | null | undefined;
 function trackLastViewChange(event: Event): void {
-	lastViewChange = (event.target as EventTarget & Partial<Pick<Element, 'closest'>>).closest?.('.js-targetable-element[id^="diff-"]');
+	const element = (event.target as EventTarget & Partial<Pick<Element, 'closest'>>).closest?.('.js-targetable-element[id^="diff-"]');
+	if (element) {
+		lastViewChange = element;
+	}
 }
 
 function runShortcuts(event: KeyboardEvent): void {
@@ -61,7 +64,13 @@ function runShortcuts(event: KeyboardEvent): void {
 
 	// `j` goes to the next comment, `k` goes back a comment
 	const direction = event.key === 'j' ? 1 : -1;
-	const currentIndex = items.indexOf(focusedComment);
+	let currentIndex = items.indexOf(focusedComment);
+	if (currentIndex < 0) {
+		const closestComment = focusedComment?.querySelector('.js-minimizable-comment-group');
+		if (closestComment) {
+			currentIndex = items.indexOf(closestComment);
+		}
+	}
 
 	// Start at 0 if nothing is; clamp index
 	const chosenCommentIndex = Math.min(
@@ -94,7 +103,8 @@ function runShortcuts(event: KeyboardEvent): void {
 
 function init(signal: AbortSignal): void {
 	document.body.addEventListener('keypress', runShortcuts, {signal});
-	document.body.addEventListener('change', trackLastViewChange)
+	document.body.addEventListener('change', trackLastViewChange);
+	document.body.addEventListener('focus', trackLastViewChange);
 }
 
 void features.add(import.meta.url, {
