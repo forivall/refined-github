@@ -87,7 +87,15 @@ function runShortcuts(event: KeyboardEvent): void {
 	// `j` goes to the next item, `k` goes back an item
 	const direction = event.key === 'j' ? 1 : -1;
 	// Without `targetElement`, it will start from -1
-	const currentIndex = items.indexOf(targetElement!);
+	let currentIndex = items.indexOf(targetElement!);
+	if (currentIndex < 0) {
+		const closestComment = targetElement?.querySelector(
+			'.js-minimizable-comment-group',
+		);
+		if (closestComment) {
+			currentIndex = items.indexOf(closestComment);
+		}
+	}
 
 	// Start at 0 if nothing is; clamp index
 	const chosenItemIndex = Math.min(
