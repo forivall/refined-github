@@ -278,6 +278,7 @@ https://github.com/refined-github/refined-github/wiki/Contributing#metadata-guid
 - [](# "easy-toggle-commit-messages") [Enables toggling commit messages by clicking on the commit box.](https://user-images.githubusercontent.com/1402241/152121837-ca13bf8a-9b7f-4517-8e8d-b58bb135523b.gif)
 - [](# "link-to-compare-diff") [Linkifies the "X files changed" text on compare pages to allow jumping to the diff.](https://user-images.githubusercontent.com/46634000/157072587-0335357a-18c7-44c4-ae6e-237080fb36b4.png)
 - [](# "conventional-commits") [Shows conventional commit types as labels before the commit message.](https://github.com/user-attachments/assets/980a2d5e-13c2-4b1b-bb80-81dc94723000)
+- [](# "authored-date") [Shows the commit's authored date if it differs from the committed date.](https://user-images.githubusercontent.com/46634000/157072587-0335357a-18c7-44c4-ae6e-237080fb36b4.png)
 
 <!--
 Refer to style guide in the wiki. Keep this message between sections.
