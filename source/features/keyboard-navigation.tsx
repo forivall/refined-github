@@ -88,13 +88,31 @@ function runShortcuts(event: KeyboardEvent): void {
 				item.classList.remove('not-target');
 			}
 		}
-		if (chosenComment.classList.contains('js-details-container') && isFileMinimized(chosenComment)) {
-			// Change hash without focusing and expanding
-			window.history.replaceState(window.history.state, '', '#' + chosenComment.id);
-			chosenComment.scrollIntoView();
-			chosenComment.classList.add('details-collapsed-target');
-			$(':target')?.classList.add('not-target');
+		if (chosenComment.classList.contains('js-details-container')) {
+			if (isFileMinimized(chosenComment)) {
+				// Change hash without focusing and expanding
+				window.history.replaceState(window.history.state, '', '#' + chosenComment.id);
+				chosenComment.scrollIntoView();
+				chosenComment.classList.add('details-collapsed-target');
+				$(':target')?.classList.add('not-target');
+			} else {
+				// Focus comment without pushing to history
+				location.replace('#' + chosenComment.id);
+			}
 		} else {
+			((fn: (i: number, next: () => void) => void) => {
+				const createNext = (i: number) => () => fn(i, createNext(i + 1));
+				createNext(0)();
+			})((i, next) => {
+				if (i < 2) {
+					window.addEventListener('scrollend', next, { once: true, passive: true });
+				} else {
+					chosenComment.scrollIntoView({ block: 'center' })
+					if (i < 5) {
+						requestAnimationFrame(next);
+					}
+				}
+			});
 			// Focus comment without pushing to history
 			location.replace('#' + chosenComment.id);
 		}
