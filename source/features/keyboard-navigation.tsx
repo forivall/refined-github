@@ -115,21 +115,43 @@ function runShortcuts(event: KeyboardEvent): void {
 			}
 		}
 
-		if (
-			chosenItem.classList.contains('js-details-container')
-			&& isFileMinimized(chosenItem)
-		) {
-			// Change hash without focusing and expanding
-			globalThis.history.replaceState(
-				globalThis.history.state,
-				'',
-				'#' + chosenItem.id,
-			);
-			chosenItem.scrollIntoView();
-			chosenItem.classList.add('details-collapsed-target');
-			$optional(':target')?.classList.add('not-target');
+		if (chosenItem.classList.contains('js-details-container')) {
+			if (isFileMinimized(chosenItem)) {
+				// Change hash without focusing and expanding
+				globalThis.history.replaceState(
+					globalThis.history.state,
+					'',
+					'#' + chosenItem.id,
+				);
+				chosenItem.scrollIntoView();
+				chosenItem.classList.add('details-collapsed-target');
+				$optional(':target')?.classList.add('not-target');
+			} else {
+			  // Make item a target without pushing to history
+				location.replace('#' + chosenItem.id);
+			}
 		} else {
-		  // Make item a target without pushing to history
+			((function_: (index: number, next: () => void) => void) => {
+				const createNext = (index: number) => () => {
+					function_(index, createNext(index + 1));
+				};
+
+				createNext(0)();
+			})((index, next) => {
+				if (index < 2) {
+					window.addEventListener('scrollend', next, {
+						once: true,
+						passive: true,
+					});
+				} else {
+					chosenItem.scrollIntoView({block: 'center'});
+					if (index < 5) {
+						requestAnimationFrame(next);
+					}
+				}
+			});
+
+			// Focus comment without pushing to history
 			location.replace('#' + chosenItem.id);
 		}
 	}
