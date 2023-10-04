@@ -14,7 +14,7 @@ const isCommentGroupMinimized = (comment: HTMLElement): boolean =>
 		'.js-resolvable-thread-contents.d-none', // Regular comments
 		'details.js-resolvable-timeline-thread-container:not([open])', // Review comments on Conversation tab
 	])
-	|| isDisplayNone(comment.closest('.js-file-content')!), // Review comments on Files tab
+	|| isDisplayNone(comment.closest(['.js-file-content', '.js-file-level-comments-table'])!), // Review comments on Files tab
 	);
 
 const isFileMinimized = (element: HTMLElement | undefined): boolean =>
