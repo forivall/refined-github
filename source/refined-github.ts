@@ -222,3 +222,4 @@ import './features/no-modals.js';
 import './features/same-page-links.js';
 import './features/linkify-text.js';
 import './features/authored-date.js';
+import './features/open-file-local.js';
