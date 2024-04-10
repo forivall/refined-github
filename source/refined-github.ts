@@ -222,3 +222,4 @@ import './features/linkify-text.js';
 import './features/actions-run-removal.js';
 import './features/new-milestone-button.js';
 import './features/authored-date.js';
+import './features/open-file-local.js';
