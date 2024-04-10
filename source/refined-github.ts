@@ -220,3 +220,4 @@ import './features/unread-anywhere.js';
 import './features/no-modals.js';
 import './features/same-page-links.js';
 import './features/authored-date.js';
+import './features/open-file-local.js';
