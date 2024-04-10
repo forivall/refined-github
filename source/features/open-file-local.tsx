@@ -126,7 +126,7 @@ function init(signal: AbortSignal): void {
 	}
 
 	function updateCwd(event: React.ChangeEvent<HTMLInputElement>) {
-    setCwd(event.target.value);
+		setCwd(event.target.value);
 	}
 
 	const anchors: {
@@ -137,12 +137,12 @@ function init(signal: AbortSignal): void {
 	}[] = [];
 	const pathBase = pageDetect.utils.getCleanPathname();
 	const prNumber = pathBase.split('/')[3];
-	const cwd = getCwd();
+	let cwd = getCwd();
 	if (cwd) {
 		createAnchors();
 	}
 	function updateAnchors() {
-		const cwd = getCwd();
+		cwd = getCwd();
 		if (!cwd) {
 			return;
 		}
@@ -164,6 +164,24 @@ function init(signal: AbortSignal): void {
 			anchor.href = href;
 		});
 	}
+	function createAnchor(
+		loc: string,
+		lineNumber: string | undefined,
+		hash?: string | null,
+	) {
+		let href = `vscode://file${cwd}/${loc}`;
+		if (lineNumber) {
+			href += `:${lineNumber}`;
+		}
+		const anchor: HTMLAnchorElement = (
+			<a href={href} className="Link--onHover color-fg-muted ml-2 mr-2">
+				open
+			</a>
+		) as HTMLElement as HTMLAnchorElement;
+		anchors.push({ anchor, hash, loc, lineNumber });
+		return anchor;
+	}
+
 	function createAnchors() {
 		if (pageDetect.isPRConversation()) {
 			const selector = `.js-comment-container a[href^=${JSON.stringify(
@@ -186,23 +204,14 @@ function init(signal: AbortSignal): void {
 						'.blob-num-addition[data-line-number]',
 					);
 				const lineNumber = lineNumberElement?.dataset.lineNumber;
-				const anchor = document.createElement('a');
-				anchor.innerText = 'open';
-				let href = `vscode://file${cwd}/${loc}`;
-				if (lineNumber) {
-					href += `:${lineNumber}`;
-				}
-				anchor.href = href;
-				anchor.className = 'Link--onHover color-fg-muted ml-2 mr-2';
-				anchors.push({ anchor, loc, lineNumber });
+				const anchor = createAnchor(loc, lineNumber);
 				element.parentElement?.classList.remove('mr-3');
 				element.after(anchor);
-			}
+			};
 			observe(selector, createCommentAnchor, { signal });
 		}
 
-		observe('clipboard-copy', (element) => {
-			const anchor = document.createElement('a');
+		const createFileAnchor = (element: HTMLElement): void => {
 			const loc = element.getAttribute('value');
 			if (!loc) {
 				return;
@@ -214,17 +223,11 @@ function init(signal: AbortSignal): void {
 				.closest('.js-file')
 				?.querySelector('.blob-num-addition[data-line-number]');
 			const lineNumber = lineNumberElement?.dataset.lineNumber;
-			let href = `vscode://file${cwd}/${loc}`;
-			if (lineNumber) {
-				href += `:${lineNumber}`;
-			}
 			const hash = linkanchor?.getAttribute('href');
-			anchor.innerText = 'open';
-			anchor.href = href;
-			anchor.className = 'Link--onHover color-fg-muted ml-2 mr-2';
-			anchors.push({ anchor, loc, hash });
+			const anchor = createAnchor(loc, lineNumber, hash);
 			element.after(anchor);
-		}, { signal });
+		};
+		observe('.file-info clipboard-copy', createFileAnchor, { signal });
 	}
 
 	let currenthash = '';
