@@ -220,3 +220,4 @@ import './features/sidebar-focus-file.js';
 import './features/rgh-token-user.js';
 import './features/unread-anywhere.js';
 import './features/authored-date.js';
+import './features/open-file-local.js';
