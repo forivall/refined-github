@@ -184,9 +184,11 @@ function init(signal: AbortSignal): void {
 
 	function createAnchors() {
 		if (pageDetect.isPRConversation()) {
-			const selector = `.js-comment-container a[href^=${JSON.stringify(
+			const pendingAttachments = new WeakSet<HTMLElement>();
+			const aSelector = `a[href^=${JSON.stringify(
 				`/${pathBase}/files`,
-			)}]`;
+			)}]`
+			const selector = `.js-comment-container ${aSelector}`;
 			const createCommentAnchor = async (element: HTMLElement) => {
 				const summary = element.closest('summary');
 				const commentLinks: NodeListOf<HTMLAnchorElement> | undefined =
@@ -194,21 +196,31 @@ function init(signal: AbortSignal): void {
 				const commentHrefs = new Set(
 					[...(commentLinks ?? [])].map((anchor) => anchor.href),
 				);
-				const loc =
-					(await reviewThreads.get(parseInt(prNumber, 10))).find((thread) =>
-						thread.comments.nodes.some((it) => commentHrefs.has(it.url)),
-					)?.path || element.innerText?.trim();
+				if (!commentHrefs.size) {
+					pendingAttachments.add(element);
+					return;
+				}
+				pendingAttachments.delete(element);
+				const loc = (await reviewThreads.get(parseInt(prNumber, 10))).find((thread) => thread.comments.nodes.some((it) => commentHrefs.has(it.url))
+				)?.path || element.innerText?.trim();
 
-				const lineNumberElement: HTMLElement | null | undefined =
-					summary?.nextElementSibling?.querySelector(
-						'.blob-num-addition[data-line-number]',
-					);
+				const lineNumberElement: HTMLElement | null | undefined = summary?.nextElementSibling?.querySelector(
+					'.blob-num-addition[data-line-number]'
+				);
 				const lineNumber = lineNumberElement?.dataset.lineNumber;
 				const anchor = createAnchor(loc, lineNumber);
 				element.parentElement?.classList.remove('mr-3');
 				element.after(anchor);
 			};
 			observe(selector, createCommentAnchor, { signal });
+			const resolvePendingAttachments = async (element: HTMLElement) => {
+				const pendingCommentContainer = element.closest('.js-comment-container');
+				const pendingAnchor = pendingCommentContainer?.querySelector(aSelector);
+				if (pendingAnchor && pendingAttachments.has(pendingAnchor)) {
+					await createCommentAnchor(pendingAnchor);
+				}
+			}
+			observe('a[href^="#discussion"]', resolvePendingAttachments, { signal });
 		}
 
 		const createFileAnchor = (element: HTMLElement): void => {
