@@ -28,18 +28,23 @@ const getAuthorDates = async (commits: (string | undefined)[]): Promise<(string 
 
 	return commits.map(c => c && repository[`_${c}`].authoredDate);
 };
-function getCommitHash(commit: HTMLElement): string {
-	return commit.querySelector('a.markdown-title')!.pathname.split('/').pop()!;
+function getCommitHash(commit: HTMLElement): string | undefined {
+	const anchor = commit.querySelector('a[href*="/commit/"]');
+	if (!anchor || !pageDetect.isSingleCommit(anchor)) {
+		return;
+	}
+	return anchor.pathname.split('/').pop()!;
 }
 async function init(): Promise<void> {
 	let commitElements: NodeListOf<HTMLElement> | Array<HTMLElement> = [];
-	let commitHashes: string[] = [];
+	let commitHashes: Array<string | undefined> = [];
 	if (pageDetect.isCommit()) {
 		commitElements = [document.querySelector('.commit-meta')!];
 		commitHashes = [document.location.pathname.split('/').pop()!];
 	} else if (!pageDetect.isBlame()) {
 		commitElements = document.querySelectorAll([
-			'.js-commits-list-item', // `isCommitList`
+			'.js-commits-list-item', // `isPRCommitList`
+			'[data-testid="commit-row-item"]', // `isRepoCommitList`
 			'[data-test-selector="pr-timeline-commits-list"] .TimelineItem', // `isPRConversation`
 		].join(','));
 		commitHashes = Array.from({length: commitElements.length});
@@ -49,7 +54,9 @@ async function init(): Promise<void> {
 	}
 	const authoredDates = await getAuthorDates(commitHashes);
 	for (const [index, commit] of commitElements.entries()) {
-		const container = commit.querySelector('.commit-author')?.parentElement;
+		const container
+			= commit.querySelector('[data-testid="listview-item-main-content"]')
+				|| commit.querySelector('.commit-author, [data-testid="author-avatar"]')?.parentElement;
 		if (container) {
 			const commitTime = container.querySelector('relative-time');
 			const authorDate = authoredDates[index];
@@ -57,7 +64,7 @@ async function init(): Promise<void> {
 				const relativeTime = document.createElement('relative-time');
 				relativeTime.setAttribute('datetime', authorDate);
 				const span = document.createElement('span');
-				span.classList.add('color-fg-muted');
+				span.classList.add('color-fg-muted', 'pl-1');
 				span.append('(authored ', relativeTime, ')');
 				if (commitTime) {
 					commitTime.after(' ', span);
