@@ -31,8 +31,8 @@ const getAuthorDates = async (commits: Array<string | undefined>): Promise<Array
 };
 
 function getCommitHash(commit: HTMLElement): string | undefined {
-	const anchor = commit.querySelector('a[href*="/commit/"]');
-	if (!anchor || !pageDetect.isSingleCommit(anchor)) {
+	const anchor = commit.querySelector(['a[href*="/commit/"]', 'a[href*="/commits/"]']);
+	if (!anchor || !(pageDetect.isSingleCommit(anchor) || pageDetect.isPRCommit(anchor))) {
 		return;
 	}
 
