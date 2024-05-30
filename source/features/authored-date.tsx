@@ -29,8 +29,8 @@ const getAuthorDates = async (commits: (string | undefined)[]): Promise<(string 
 	return commits.map(c => c && repository[`_${c}`].authoredDate);
 };
 function getCommitHash(commit: HTMLElement): string | undefined {
-	const anchor = commit.querySelector('a[href*="/commit/"]');
-	if (!anchor || !pageDetect.isSingleCommit(anchor)) {
+	const anchor = commit.querySelector(['a[href*="/commit/"]', 'a[href*="/commits/"]']);
+	if (!anchor || !(pageDetect.isSingleCommit(anchor) || pageDetect.isPRCommit(anchor))) {
 		return;
 	}
 	return anchor.pathname.split('/').pop()!;
