@@ -41,6 +41,7 @@ type ReviewThread = {
 };
 
 const reviewThreads = new CachedFunction('review-threads', {
+	maxAge: { hours: 2 },
 	async updater(pr: number): Promise<ReviewThread[]> {
 		const variables = { pr, endCursor: null };
 
@@ -136,7 +137,8 @@ function init(signal: AbortSignal): void {
 		lineNumber?: string;
 	}[] = [];
 	const pathBase = pageDetect.utils.getCleanPathname();
-	const prNumber = pathBase.split('/')[3];
+	const prNumberString = pathBase.split('/')[3];
+	const prNumber = parseInt(prNumberString, 10)
 	let cwd = getCwd();
 	if (cwd) {
 		createAnchors();
@@ -201,8 +203,12 @@ function init(signal: AbortSignal): void {
 					return;
 				}
 				pendingAttachments.delete(element);
-				const loc = (await reviewThreads.get(parseInt(prNumber, 10))).find((thread) => thread.comments.nodes.some((it) => commentHrefs.has(it.url))
-				)?.path || element.innerText?.trim();
+				const reviewThread = await reviewThreads.get(prNumber);
+				const apiLoc = reviewThread.find((thread) => thread.comments.nodes.some((it) => commentHrefs.has(it.url)))?.path;
+				if (!apiLoc) {
+					reviewThreads.delete(prNumber)
+				}
+				const loc = apiLoc || element.innerText?.trim();
 
 				const lineNumberElement: HTMLElement | null | undefined = summary?.nextElementSibling?.querySelector(
 					'.blob-num-addition[data-line-number]'
