@@ -45,6 +45,7 @@ type ReviewThread = {
 };
 
 const reviewThreads = new CachedFunction('review-threads', {
+	maxAge: {hours: 2},
 	async updater(pr: number): Promise<ReviewThread[]> {
 		const variables: {pr: number; endCursor?: string} = {pr};
 
@@ -137,7 +138,8 @@ function init(signal: AbortSignal): void {
 		lineNumber?: string;
 	}[] = [];
 	const pathBase = pageDetect.utils.getCleanPathname();
-	const prNumber = pathBase.split('/')[3];
+	const prNumberString = pathBase.split('/')[3];
+	const prNumber = Number.parseInt(prNumberString, 10);
 	let cwd = getCwd();
 	if (cwd) {
 		createAnchors();
@@ -219,9 +221,12 @@ function init(signal: AbortSignal): void {
 					return;
 				}
 				pendingAttachments.delete(element);
-				const reviewThreadsResult = await reviewThreads.get(Number.parseInt(prNumber, 10));
-				const loc = reviewThreadsResult.find(thread => thread.comments.nodes.some(it => commentHrefs.has(it.url)),
-				)?.path || element.textContent?.trim();
+				const reviewThreadsResult = await reviewThreads.get(prNumber);
+				const apiLoc = reviewThreadsResult.find(thread => thread.comments.nodes.some(it => commentHrefs.has(it.url)))?.path;
+				if (!apiLoc) {
+					reviewThreads.delete(prNumber);
+				}
+				const loc = apiLoc || element.textContent?.trim();
 
 				const lineNumberElement: HTMLElement | undefined = summary?.nextElementSibling?.querySelector(
 					'.blob-num-addition[data-line-number]',
