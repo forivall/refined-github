@@ -56,7 +56,7 @@ async function init(): Promise<void> {
 	for (const [index, commit] of commitElements.entries()) {
 		const container
 			= commit.querySelector('[data-testid="listview-item-main-content"]')
-				|| commit.querySelector('.commit-author, [data-testid="author-avatar"]')?.parentElement;
+				|| commit.querySelector(['.commit-author', '[data-testid="author-avatar"]'])?.parentElement;
 		if (container) {
 			const commitTime = container.querySelector('relative-time');
 			const authorDate = authoredDates[index];
