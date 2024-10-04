@@ -1,3 +1,4 @@
+import batchedFunction from 'batched-function';
 import * as pageDetect from 'github-url-detection';
 
 import features from '../feature-manager.js';
@@ -52,19 +53,39 @@ async function init(): Promise<void> {
 			commitHashes[index] = getCommitHash(commit);
 		}
 	}
+	await addAuthoredDates(commitElements, commitHashes);
+}
+
+function getDateTime(relativeTimeElement: HTMLElement): string | undefined {
+	return relativeTimeElement?.getAttribute('datetime')?.replace(/\.000Z$/, 'Z');
+}
+async function addAuthoredDates(commitElements: NodeListOf<HTMLElement> | Array<HTMLElement>, commitHashes: Array<string | undefined>): Promise<void> {
 	const authoredDates = await getAuthorDates(commitHashes);
+	let relativeTimeLoaded = false;
+	do {
+		const relativeTime = document.querySelector('relative-time');
+		if (relativeTime && !relativeTime.hasAttribute('datetime')) {
+			// eslint-disable-next-line no-await-in-loop
+			await new Promise(resolve => setTimeout(resolve, 20));
+		} else {
+			relativeTimeLoaded = true;
+		}
+	} while (!relativeTimeLoaded);
 	for (const [index, commit] of commitElements.entries()) {
 		const container
 			= commit.querySelector('[data-testid="listview-item-main-content"]')
 				|| commit.querySelector(['.commit-author', '[data-testid="author-avatar"]'])?.parentElement;
 		if (container) {
+			if (container.querySelector('.rgh-authored-date')) {
+				continue;
+			}
 			const commitTime = container.querySelector('relative-time');
 			const authorDate = authoredDates[index];
-			if (authorDate && commitTime?.getAttribute('datetime') !== authorDate) {
+			if (authorDate && (!commitTime || getDateTime(commitTime)) !== authorDate) {
 				const relativeTime = document.createElement('relative-time');
 				relativeTime.setAttribute('datetime', authorDate);
 				const span = document.createElement('span');
-				span.classList.add('color-fg-muted', 'pl-1');
+				span.classList.add('color-fg-muted', 'pl-1', 'rgh-authored-date');
 				span.append('(authored ', relativeTime, ')');
 				if (commitTime) {
 					commitTime.after(' ', span);
@@ -78,25 +99,35 @@ async function init(): Promise<void> {
 
 function hovercardInit(signal: AbortSignal): void {
 	observe('[data-hydro-view*="commit-hovercard-hover"]', updateHovercard, {signal});
-	observe('.react-blame-for-range', updateBlameLine, {signal});
+	observe('.react-blame-for-range', batchedFunction(updateBlameCommits, {delay: 100}), {signal});
+	observe([
+		'[data-testid="commit-row-item"]',
+
+		'.js-commits-list-item', // `isPRCommitList`
+		'.js-timeline-item .TimelineItem:has(.octicon-git-commit)', // `isPRConversation`; "js-timeline-item" excludes "isPRCommitList"
+	], batchedFunction(updateCommits, {delay: 100}), {signal});
 }
 
-async function updateBlameLine(container: HTMLElement): Promise<void> {
-	const commit = container.querySelector(
-		'[data-hovercard-url*="/commit/"]',
-	);
-	if (!commit) {
+async function updateBlameCommits(containers: HTMLElement[]): Promise<void> {
+	const commitHashes = containers.map(container => {
+		const hovercardCommit = container.querySelector([
+			'[data-hovercard-url*="/commit/"]',
+			'[data-hovercard-type="commit"]',
+		]);
+		const hovercardUrl = hovercardCommit?.dataset.hovercardUrl;
+		return hovercardUrl && new URL(hovercardUrl).pathname.split('/')[4];
+	});
+	if (commitHashes.length === 0) {
 		return;
 	}
-	const {hovercardUrl} = commit.dataset;
-	const commitHash = hovercardUrl?.split('/')[4];
-	if (!commitHash) {
-		return;
-	}
-	const [authorDate] = await getAuthorDates([commitHash]);
-	if (container) {
+	const authorDates = await getAuthorDates(commitHashes);
+	for (const [index, container] of containers.entries()) {
+		if (!container) {
+			continue;
+		}
+		const authorDate = authorDates[index];
 		const commitTime = container.querySelector('relative-time');
-		if (authorDate && commitTime && commitTime.getAttribute('datetime') !== authorDate) {
+		if (authorDate && commitTime && getDateTime(commitTime) !== authorDate) {
 			const relativeTime = document.createElement('relative-time');
 			relativeTime.setAttribute('datetime', authorDate);
 			relativeTime.setAttribute('class', commitTime.getAttribute('class')!);
@@ -105,7 +136,25 @@ async function updateBlameLine(container: HTMLElement): Promise<void> {
 			commitTime.after(' ', relativeTime);
 		}
 	}
-	// TODO: batch requests
+}
+
+async function updateCommits(containers: HTMLElement[]): Promise<void> {
+	const commitHashes = containers.map(container => {
+		const anchorCommit = getCommitHash(container);
+		if (anchorCommit) {
+			return anchorCommit;
+		}
+		const hovercardCommit = container.querySelector([
+			'[data-hovercard-url*="/commit/"]',
+			'[data-hovercard-type="commit"]',
+		]);
+		const hovercardUrl = hovercardCommit?.dataset.hovercardUrl;
+		return hovercardUrl && new URL(hovercardUrl).pathname.split('/')[4];
+	});
+	if (commitHashes.length === 0) {
+		return;
+	}
+	addAuthoredDates(containers, commitHashes);
 }
 
 async function updateHovercard(hovercardData: HTMLElement): Promise<void> {
