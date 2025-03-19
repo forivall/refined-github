@@ -40,7 +40,8 @@ async function init(): Promise<void> {
 	let commitElements: NodeListOf<HTMLElement> | Array<HTMLElement> = [];
 	let commitHashes: Array<string | undefined> = [];
 	if (pageDetect.isCommit()) {
-		commitElements = [document.querySelector('.commit-meta')!];
+		const header = document.querySelector(['.commit-meta', 'header:not(.AppHeader']);
+		commitElements = header ? [header] : [];
 		commitHashes = [document.location.pathname.split('/').pop()!];
 	} else if (!pageDetect.isBlame()) {
 		commitElements = document.querySelectorAll([
