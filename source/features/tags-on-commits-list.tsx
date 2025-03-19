@@ -102,6 +102,10 @@ async function init(): Promise<void | false> {
 		commitsOnPage = $$('[data-testid="commit-row-item"]');
 	}
 
+	if (commitsOnPage.length === 0) {
+		return;
+	}
+
 	const lastCommitOnPage = getCommitHash(commitsOnPage.at(-1)!);
 	let cached = await cache.get<Record<string, string[]>>(cacheKey) ?? {};
 	const commitsWithNoTags = [];
