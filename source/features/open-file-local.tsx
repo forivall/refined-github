@@ -14,25 +14,37 @@ import GetReviewThreads from './open-file-local.gql';
 const storagePrefix = 'rgh-open-file-local';
 
 function getCwd(): string {
+	return getCwdHistory()[0];
+}
+
+function getStorageKey(): string {
 	const nameWithOwner = pageDetect.utils.getRepositoryInfo()?.nameWithOwner;
-	const storageKey = nameWithOwner
+	return nameWithOwner
 		? `${storagePrefix}.${JSON.stringify(nameWithOwner)}`
 		: storagePrefix;
+}
 
-	return localStorage.getItem(storageKey) || '';
+function getCwdHistory(storageKey = getStorageKey()): string[] {
+	const value = localStorage.getItem(storageKey) || '';
+	let parsed;
+	try {
+		parsed = JSON.parse(value);
+	} catch {}
+	if (Array.isArray(parsed)) {
+		return parsed;
+	}
+	return [value];
 }
 
 function setCwd(value: string): void {
-	const nameWithOwner = pageDetect.utils.getRepositoryInfo()?.nameWithOwner;
-	const storageKey = nameWithOwner
-		? `${storagePrefix}.${JSON.stringify(nameWithOwner)}`
-		: storagePrefix;
+	const storageKey = getStorageKey();
+	const history = getCwdHistory(storageKey).filter(item => item !== value);
 
-	return localStorage.setItem(storageKey, value);
+	return localStorage.setItem(storageKey, JSON.stringify([value, ...history]));
 }
 
-function updateCwd(event: React.ChangeEvent<HTMLInputElement>): void {
-	setCwd(event.target.value);
+function updateCwd(event: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>): void {
+	setCwd((event.target as HTMLInputElement | HTMLButtonElement).value);
 }
 type ReviewThread = {
 	line: number;
@@ -92,6 +104,7 @@ function init(signal: AbortSignal): void {
 		// It may be zero on the sticky header, but `clean-conversation-headers` doesn't apply there
 		const alignment = 'right-0'; // 'left-0';
 
+		const [cwd, ...history] = getCwdHistory();
 		(child => anchor.insertBefore(child, anchor.firstChild))(
 			<details
 				className={`details-reset details-overlay d-inline-block ${positionClass}`}
@@ -120,10 +133,13 @@ function init(signal: AbortSignal): void {
 								type="text"
 								className="form-control input-block pl-5 js-filterable-field"
 								placeholder="/path/to/local/repo"
-								value={getCwd()}
+								value={cwd}
 								onChange={updateCwd}
 								onBlur={updateAnchors}
 							/>
+							{...history.map(item =>
+								<button type="button" className="SelectMenu-item" value={item} onClick={updateCwd}>{item}</button>,
+							)}
 						</div>
 					</div>
 				</details-menu>
