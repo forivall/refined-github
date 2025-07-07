@@ -113,9 +113,95 @@ function blockDuplicateSubmissions(event: DelegateEvent): void {
 	lastSubmission = Date.now();
 }
 
+function replaceNewCheckboxes(radioGroupFieldset: HTMLFieldSetElement) {
+	const dialogContainer = radioGroupFieldset.closest('[role="dialog"]');
+	if (!dialogContainer) {
+		throw new Error('Could not find dialog container');
+	}
+	const dialogContainerClass = [...dialogContainer.classList].find((className) => className.startsWith('prc-Dialog-Dialog'));
+	if (dialogContainerClass) {
+		dialogContainer.style.height = 'fit-content';
+		dialogContainer.style.maxHeight = '100dvh';
+	}
+	const overflowWrapper = radioGroupFieldset.closest([
+		'[class^="prc-Dialog-DialogOverflowWrapper"]',
+		'[class*=" prc-Dialog-DialogOverflowWrapper"]',
+	]);
+	const dialogOverflowClass = overflowWrapper && [...overflowWrapper.classList].find((className) => className.startsWith('prc-Dialog-DialogOverflowWrapper'));
+	if (dialogOverflowClass) {
+		overflowWrapper.classList.remove(dialogOverflowClass);
+	}
+	
+	const radios = [...radioGroupFieldset.querySelectorAll('input[name="reviewEvent"]')];
+	if (radios.length === 0) {
+		throw new Error('Could not find radio buttons');
+	}
+	const dialogFooter = dialogContainer.querySelector(['[class^="prc-Dialog-Footer"]', '[class*=" prc-Dialog-Footer"']);
+	const submitButton = dialogFooter?.querySelector('button[data-variant="primary"]');
+	if (!submitButton) {
+		throw new Error('Could not find submit button');
+	}
+
+	radioGroupFieldset.style.visibility = 'hidden';
+	radioGroupFieldset.style.height = '0';
+	radioGroupFieldset.style.margin = '0';
+	submitButton.style.visibility = 'hidden';
+	submitButton.style.width = '0';
+	submitButton.style.minWidth = '0';
+
+	// Generate the new buttons
+	for (const radio of radios) {
+		const parent = radio.closest([
+			'[class*=" prc-FormControl-ControlHorizontalLayout"]',
+			'[class^="prc-FormControl-ControlHorizontalLayout"]',
+		]) || radio.parentElement!.parentElement!;
+		const labelElement = (
+			parent.querySelector('label')
+		);
+		const tooltipElement = ($([
+			'[class*=" ReviewMenuButton-module__RadioText--"]',
+			'[class^="ReviewMenuButton-module__RadioText--"]',
+		], parent) || (labelElement || parent).lastElementChild)
+		const tooltip = tooltipElement.textContent.trim().replace(/\.$/, '');
+		const labelSpan = [...(labelElement || parent).children].find((el) => el !== tooltipElement);
+		assertNodeContent(labelSpan, /^(Approve|Request changes|Comment)$/);
+
+		const classes = ['btn'];
+
+		if (tooltip) {
+			classes.push('tooltipped tooltipped-nw tooltipped-no-delay');
+		}
+
+		const button = (
+			<button
+				name="pull_request_review[event]"
+				value={radio.value}
+				className={classes.join(' ')}
+				aria-label={tooltip}
+				disabled={radio.disabled}
+				onClick={() => {
+					radio.click();
+					submitButton.click();
+				}}
+			>
+				{labelSpan!.textContent}
+			</button>
+		);
+
+		if (!radio.disabled && radio.value === 'approve') {
+			button.prepend(<CheckIcon className="color-fg-success" />);
+		} else if (!radio.disabled && radio.value === 'request changes') {
+			button.prepend(<FileDiffIcon className="color-fg-danger" />);
+		}
+
+		submitButton.after(button);
+	}
+}
+
 function init(signal: AbortSignal): void {
 	// The selector excludes the "Cancel" button
 	observe('#review-changes-modal [type="submit"]:not([name])', replaceCheckboxes, {signal});
+	observe('fieldset[class*=" ReviewMenuButton"],fieldset[class^="ReviewMenuButton"]', replaceNewCheckboxes, {signal});
 	delegate('#review-changes-modal form', 'submit', blockDuplicateSubmissions, {signal});
 }
 
