@@ -17,8 +17,12 @@ const isCommentGroupMinimized = (comment: HTMLElement): boolean =>
 	|| isDisplayNone(comment.closest(['.js-file-content', '.js-file-level-comments-table'])!), // Review comments on Files tab
 	);
 
-const isFileMinimized = (element: HTMLElement | undefined): boolean =>
-	Boolean(element?.classList.contains('js-file') && isDisplayNone($optional('.js-file-content', element)));
+const isFileMinimized = (element: HTMLElement | undefined): boolean => Boolean(
+	(element?.classList.contains('js-file') && isDisplayNone($optional('.js-file-content', element)))
+	|| (element && [...element.classList].some((className) => className.startsWith('Diff-module__diffTargetable--'))
+	  && $optional('[class^="DiffFileHeader-module__collapsed--"], [class*=" DiffFileHeader-module__collapsed--"]')
+	)
+);
 
 let lastViewChange: HTMLElement | undefined;
 function trackLastViewChange(event: Event): void {
@@ -33,17 +37,23 @@ function runShortcuts(event: KeyboardEvent): void {
 		return;
 	}
 
-
 	const focusedComment = $optional(globalThis.location.hash || ':target') || lastViewChange;
 
 	if (event.key === 'x') {
 		if (!focusedComment) {
 			return;
 		}
-		const toggle = $optional('.js-reviewed-toggle', focusedComment);
+		const toggle = $optional(
+			'.js-reviewed-toggle',
+			focusedComment
+		) || $$(
+			':is([class^="Diff-module__diffHeaderWrapper"], [class*=" Diff-module__diffHeaderWrapper"]) button[aria-pressed]',
+			focusedComment
+		).find((el) => el.textContent.trim() === 'Viewed');
 		if (toggle) {
 			const wasFileMinimized = isFileMinimized(focusedComment);
 			event.preventDefault();
+			console.log('toggling', toggle.ariaPressed, toggle, wasFileMinimized);
 			toggle.click();
 			if (wasFileMinimized) {
 				location.replace('#' + focusedComment.id);
@@ -55,6 +65,7 @@ function runShortcuts(event: KeyboardEvent): void {
 	const items
 		= $$([
 			'.js-targetable-element[id^="diff-"]', // Files in diffs
+			'[role="region"]:is([class*=" Diff-module__diffTargetable--"], [class^="Diff-module__diffTargetable--"])[data-targeted]', // Files in new diffs
 			'.js-minimizable-comment-group', // Comments (to be `.filter()`ed)
 		])
 			.filter(element =>
@@ -102,6 +113,9 @@ function runShortcuts(event: KeyboardEvent): void {
 				// Focus comment without pushing to history
 				location.replace('#' + chosenComment.id);
 			}
+		} else if (chosenComment.role === 'region') {
+			// Focus comment without pushing to history
+			location.replace('#' + chosenComment.id);
 		} else {
 			((function_: (index: number, next: () => void) => void) => {
 				const createNext = (index: number) => () => function_(index, createNext(index + 1));
