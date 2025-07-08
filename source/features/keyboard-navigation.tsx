@@ -131,6 +131,9 @@ function runShortcuts(event: KeyboardEvent): void {
 			  // Make item a target without pushing to history
 				location.replace('#' + chosenItem.id);
 			}
+		} else if (chosenItem.role === 'region') {
+			// Focus item without pushing to history
+			location.replace('#' + chosenItem.id);
 		} else {
 			((function_: (index: number, next: () => void) => void) => {
 				const createNext = (index: number) => () => {
