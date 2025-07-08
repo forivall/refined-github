@@ -33,7 +33,6 @@ function runShortcuts(event: KeyboardEvent): void {
 		return;
 	}
 
-	event.preventDefault();
 
 	const focusedComment = $optional(globalThis.location.hash || ':target') || lastViewChange;
 
@@ -44,6 +43,7 @@ function runShortcuts(event: KeyboardEvent): void {
 		const toggle = $optional('.js-reviewed-toggle', focusedComment);
 		if (toggle) {
 			const wasFileMinimized = isFileMinimized(focusedComment);
+			event.preventDefault();
 			toggle.click();
 			if (wasFileMinimized) {
 				location.replace('#' + focusedComment.id);
@@ -81,6 +81,7 @@ function runShortcuts(event: KeyboardEvent): void {
 	);
 
 	if (currentIndex !== chosenCommentIndex) {
+		event.preventDefault();
 		const chosenComment = items[chosenCommentIndex];
 		for (const item of items) {
 			if (item.classList.contains('details-collapsed-target')) {
