@@ -104,6 +104,7 @@ function runShortcuts(event: KeyboardEvent): void {
 	);
 
 	if (currentIndex !== chosenItemIndex) {
+		event.preventDefault();
 		const chosenItem = items[chosenItemIndex];
 		for (const item of items) {
 			if (item.classList.contains('details-collapsed-target')) {
