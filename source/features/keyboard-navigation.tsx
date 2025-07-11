@@ -3,6 +3,8 @@ import './keyboard-navigation.css';
 import * as pageDetect from 'github-url-detection';
 import {$$, $optional, closestElementOptional, elementExists} from 'select-dom';
 
+import debounceFn from 'debounce-fn';
+
 import features from '../feature-manager.js';
 import {isEditable} from '../helpers/dom-utils.js';
 import {viewedToggleSelector} from './batch-mark-files-as-viewed.js';
@@ -49,8 +51,19 @@ function trackLastViewChange(event: Event): void {
 	}
 }
 
+const scrollIntoViewDebounced = debounceFn(
+	(element: HTMLElement) => {
+		element.scrollIntoView();
+	},
+	{before: false, after: true, wait: 40},
+);
+
 function runShortcuts(event: KeyboardEvent): void {
-	if (!'jkx'.includes(event.key) || isEditable(event.target)) {
+	if (
+		(!'jkx'.includes(event.key)
+			&& !(event.ctrlKey && 'ud'.includes(event.key)))
+		|| isEditable(event.target)
+	) {
 		return;
 	}
 
@@ -85,7 +98,9 @@ function runShortcuts(event: KeyboardEvent): void {
 		);
 
 	// `j` goes to the next item, `k` goes back an item
-	const direction = event.key === 'j' ? 1 : -1;
+	const direction = event.ctrlKey
+		? event.key === 'd' ? 5 : -5
+		: event.key === 'j' ? 1 : -1;
 	// Without `targetElement`, it will start from -1
 	let currentIndex = items.indexOf(targetElement!);
 	if (currentIndex < 0) {
@@ -132,8 +147,18 @@ function runShortcuts(event: KeyboardEvent): void {
 				location.replace('#' + chosenItem.id);
 			}
 		} else if (chosenItem.role === 'region') {
-			// Focus item without pushing to history
-			location.replace('#' + chosenItem.id);
+			// Change hash to avoid github's horrible hashchange event handlers
+			globalThis.history.replaceState(
+				globalThis.history.state,
+				'',
+				'#' + chosenItem.id,
+			);
+			if (targetElement?.dataset.targeted === 'true') {
+				targetElement.dataset.targeted = 'false';
+			}
+
+			chosenItem.dataset.targeted = 'true';
+			scrollIntoViewDebounced(chosenItem);
 		} else {
 			((function_: (index: number, next: () => void) => void) => {
 				const createNext = (index: number) => () => {
