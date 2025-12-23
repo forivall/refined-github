@@ -169,7 +169,7 @@ function replaceNewCheckboxes(radioGroupFieldset: HTMLFieldSetElement): void {
 			'[class^="ReviewMenuButton-module__RadioText--"]',
 		], parent) ?? (labelElement ?? parent).lastElementChild);
 		const tooltip = tooltipElement.textContent.trim().replace(/\.$/, '');
-		const labelSpan = [...(labelElement ?? parent).children].find(element => element !== tooltipElement);
+		const labelSpan = [...(labelElement ?? parent).children].find(element => element !== tooltipElement) ?? null;
 		assertNodeContent(labelSpan ?? null, /^(Approve|Request changes|Comment)$/);
 
 		const classes = ['btn'];

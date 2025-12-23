@@ -1,6 +1,10 @@
 import batchedFunction from 'batched-function';
 import * as pageDetect from 'github-url-detection';
 
+import {$} from 'select-dom/strict.js';
+
+import {commitHashLinkInLists} from '../github-helpers/selectors.js';
+import {assertCommitHash} from '../github-helpers/index.js';
 import features from '../feature-manager.js';
 import api from '../github-helpers/api.js';
 import observe from '../helpers/selector-observer.js';
@@ -9,7 +13,7 @@ function buildQuery(commits: string[]): string {
 	return `
 		repository() {
 			${commits.map((commit: string) => `
-				_${commit}: object(oid: "${commit}") {
+				${api.escapeKey(commit)}: object(oid: "${commit}") {
 				... on Commit {
 						authoredDate
 					}
@@ -31,13 +35,11 @@ const getAuthorDates = async (commits: Array<string | undefined>): Promise<Array
 	return commits.map(c => c && repository[`_${c}`].authoredDate);
 };
 
-function getCommitHash(commit: HTMLElement): string | undefined {
-	const anchor = commit.querySelector(['a[href*="/commit/"]', 'a[href*="/commits/"]']);
-	if (!anchor || !(pageDetect.isSingleCommit(anchor) || pageDetect.isPRCommit(anchor))) {
-		return;
-	}
-
-	return anchor.pathname.split('/').pop()!;
+export function getCommitHash(commit: HTMLElement): string {
+	const anchor = $(commitHashLinkInLists, commit);
+	const hash = anchor.pathname.split('/').pop()!;
+	assertCommitHash(hash);
+	return hash;
 }
 
 async function init(): Promise<void> {
@@ -51,7 +53,7 @@ async function init(): Promise<void> {
 		commitElements = document.querySelectorAll([
 			'.js-commits-list-item', // `isPRCommitList`
 			'[data-testid="commit-row-item"]', // `isRepoCommitList`
-			'[data-test-selector="pr-timeline-commits-list"] .TimelineItem', // `isPRConversation`
+			'.js-timeline-item .TimelineItem:has(.octicon-git-commit)', // `isPRConversation`; "js-timeline-item" excludes "isPRCommitList"
 		].join(','));
 		commitHashes = Array.from({length: commitElements.length});
 		for (const [index, commit] of commitElements.entries()) {
