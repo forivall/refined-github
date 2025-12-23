@@ -45,8 +45,20 @@ function setCwd(value: string): void {
 	localStorage.setItem(storageKey, JSON.stringify([value, ...history]));
 }
 
+function getProto(): string {
+	return localStorage.getItem(`${storagePrefix}.editorProtocol`) ?? 'vscode';
+}
+
+function setProto(value: string): void {
+	localStorage.setItem(`${storagePrefix}.editorProtocol`, value);
+}
+
 function updateCwd(event: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>): void {
 	setCwd((event.target as HTMLInputElement | HTMLButtonElement).value);
+}
+
+function updateProto(event: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement | HTMLButtonElement>): void {
+	setProto((event.target as HTMLInputElement | HTMLButtonElement).value);
 }
 
 type ReviewThread = {
@@ -108,6 +120,7 @@ function init(signal: AbortSignal): void {
 		const alignment = 'right-0'; // 'left-0';
 
 		const [cwd, ...history] = getCwdHistory();
+		const proto = getProto();
 		(child => anchor.insertBefore(child, anchor.firstChild))(
 			<details
 				className={`details-reset details-overlay d-inline-block ${positionClass}`}
@@ -144,6 +157,19 @@ function init(signal: AbortSignal): void {
 								<button type="button" className="SelectMenu-item" value={item} onClick={updateCwd}>{item}</button>,
 							)}
 						</div>
+						<div className="SelectMenu-list">
+							<input
+								type="text"
+								className="form-control input-block pl-5 js-filterable-field"
+								placeholder="vscode"
+								value={proto}
+								onChange={updateProto}
+								onBlur={updateAnchors}
+							/>
+							{...history.map(item =>
+								<button type="button" className="SelectMenu-item" value="vscode" onClick={updateProto}>{item}</button>,
+							)}
+						</div>
 					</div>
 				</details-menu>
 			</details>,
@@ -160,6 +186,7 @@ function init(signal: AbortSignal): void {
 	const prNumberString = pathBase.split('/')[3];
 	const prNumber = Number.parseInt(prNumberString, 10);
 	let cwd = getCwd();
+	let proto = getProto();
 	if (cwd) {
 		createAnchors();
 	}
@@ -167,6 +194,7 @@ function init(signal: AbortSignal): void {
 	let currenthash = '';
 	function updateAnchors(): void {
 		cwd = getCwd();
+		proto = getProto();
 		if (!cwd) {
 			return;
 		}
@@ -177,7 +205,7 @@ function init(signal: AbortSignal): void {
 		}
 
 		for (let {anchor, loc, hash, lineNumber} of anchors) {
-			let href = `vscode://file${cwd}/${loc}`;
+			let href = `${proto}://file${cwd}/${loc}`;
 			if (hash && currenthash.startsWith(hash)) {
 				const hashLineNumber = currenthash.slice(hash.length + 1).split('-')[0];
 				if (hashLineNumber) {
