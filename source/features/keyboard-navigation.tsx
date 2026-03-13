@@ -195,6 +195,8 @@ function init(signal: AbortSignal): void {
 
 void features.add(import.meta.url, {
 	shortcuts: {
+		'ctrl u': 'Focus the comment/file 5 items above',
+		'ctrl d': 'Focus the comment/file 5 items below',
 		j: 'Focus the comment/file below',
 		k: 'Focus the comment/file above',
 		x: 'Mark the file as viewed/unviewed',
