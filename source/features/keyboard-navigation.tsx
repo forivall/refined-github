@@ -38,13 +38,26 @@ const isFileMinimized = (element: HTMLElement | undefined): boolean =>
 			])),
 	);
 
+let lastViewChange: HTMLElement | undefined;
+function trackLastViewChange(event: Event): void {
+	const element
+		= (event.target as EventTarget & Partial<Pick<Element, 'closest'>>).closest?.(
+			'.js-targetable-element[id^="diff-"]',
+		) ?? undefined;
+	if (element) {
+		lastViewChange = element;
+	}
+}
+
 function runShortcuts(event: KeyboardEvent): void {
 	if (!'jkx'.includes(event.key) || isEditable(event.target)) {
 		return;
 	}
 
 	event.preventDefault();
-	const targetElement = $optional(':target') ?? $optional('[data-targeted=true]');
+	const targetElement = $optional(globalThis.location.hash || ':target')
+			?? $optional('[data-targeted=true]')
+			?? lastViewChange;
 
 	if (event.key === 'x') {
 		const viewedToggle = $optional(viewedToggleSelector, targetElement)
@@ -114,6 +127,9 @@ function runShortcuts(event: KeyboardEvent): void {
 
 function init(signal: AbortSignal): void {
 	document.body.addEventListener('keypress', runShortcuts, {signal});
+	document.body.addEventListener('change', trackLastViewChange);
+	document.body.addEventListener('click', trackLastViewChange);
+	document.body.addEventListener('focus', trackLastViewChange);
 }
 
 void features.add(import.meta.url, {
