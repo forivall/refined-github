@@ -42,7 +42,7 @@ let lastViewChange: HTMLElement | undefined;
 function trackLastViewChange(event: Event): void {
 	const element
 		= (event.target as EventTarget & Partial<Pick<Element, 'closest'>>).closest?.(
-			'.js-targetable-element[id^="diff-"]',
+			['.js-targetable-element[id^="diff-"]', '[data-targeted]'],
 		) ?? undefined;
 	if (element) {
 		lastViewChange = element;
@@ -55,9 +55,11 @@ function runShortcuts(event: KeyboardEvent): void {
 	}
 
 	event.preventDefault();
-	const targetElement = $optional(globalThis.location.hash || ':target')
-			?? $optional('[data-targeted=true]')
-			?? lastViewChange;
+	const targetElement = $optional(
+			globalThis.location.hash || ':target:not([data-targeted=true])',
+		)
+		?? $optional('[data-targeted=true]')
+		?? lastViewChange;
 
 	if (event.key === 'x') {
 		const viewedToggle = $optional(viewedToggleSelector, targetElement)
