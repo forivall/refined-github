@@ -38,7 +38,7 @@ function runShortcuts(event: KeyboardEvent): void {
 			const wasFileMinimized = isFileMinimized(targetElement);
 			// The event handler is quite broad, there's no guarantee that the intention is to toggle "Viewed"
 			viewedToggle.click();
-			if (targetElement && wasFileMinimized) {
+			if (targetElement && wasFileMinimized && !targetElement.dataset.targeted) {
 				location.replace('#' + targetElement.id);
 			}
 		}
