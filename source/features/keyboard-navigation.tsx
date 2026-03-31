@@ -1,3 +1,4 @@
+
 import * as pageDetect from 'github-url-detection';
 import {$$, $optional, closestElementOptional, elementExists} from 'select-dom';
 
@@ -18,7 +19,7 @@ function runShortcuts(event: KeyboardEvent): void {
 	}
 
 	event.preventDefault();
-	const targetElement = $optional(':target');
+	const targetElement = $optional(':target') ?? $optional('[data-targeted=true]');
 
 	if (event.key === 'x') {
 		// The event handler is quite broad, there's no guarantee that the intention is to toggle "Viewed"
