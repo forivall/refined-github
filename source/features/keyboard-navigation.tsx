@@ -8,10 +8,12 @@ import {viewedToggleSelector} from './batch-mark-files-as-viewed.js';
 
 const isCommentGroupMinimized = (comment: HTMLElement): boolean =>
 	elementExists('.minimized-comment:not(.d-none)', comment)
-	|| Boolean(closestElementOptional([
-		'.js-resolvable-thread-contents.d-none', // Regular comments
-		'details.js-resolvable-timeline-thread-container:not([open])', // Review comments
-	], comment));
+	|| Boolean(
+		closestElementOptional([
+			'.js-resolvable-thread-contents.d-none', // Regular comments
+			'details.js-resolvable-timeline-thread-container:not([open])', // Review comments
+		], comment),
+	);
 
 function runShortcuts(event: KeyboardEvent): void {
 	if (!'jkx'.includes(event.key) || isEditable(event.target)) {
@@ -64,9 +66,7 @@ void features.add(import.meta.url, {
 		k: 'Focus the comment/file above',
 		x: 'Mark the file as viewed/unviewed',
 	},
-	include: [
-		pageDetect.hasComments,
-	],
+	include: [pageDetect.hasComments],
 	init,
 });
 
