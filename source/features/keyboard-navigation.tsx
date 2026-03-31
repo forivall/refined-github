@@ -25,8 +25,16 @@ const isCommentGroupMinimized = (comment: HTMLElement): boolean =>
 
 const isFileMinimized = (element: HTMLElement | undefined): boolean =>
 	Boolean(
-		element?.classList.contains('js-file')
-		&& isDisplayNone($optional('.js-file-content', element)),
+		(element?.classList.contains('js-file')
+			&& isDisplayNone($optional('.js-file-content', element)))
+		?? (element
+			&& [...element.classList].some(className =>
+				className.startsWith('Diff-module__diffTargetable--'),
+			)
+			&& $optional([
+				'[class^="DiffFileHeader-module__collapsed--"]',
+				'[class*=" DiffFileHeader-module__collapsed--"]',
+			])),
 	);
 
 function runShortcuts(event: KeyboardEvent): void {
