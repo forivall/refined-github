@@ -139,7 +139,7 @@ function replaceNewCheckboxes(radioGroupFieldset: HTMLFieldSetElement): void {
 		throw new Error('Could not find radio buttons');
 	}
 
-	const dialogFooter = dialogContainer.querySelector(['[class^="prc-Dialog-Footer"]', '[class*=" prc-Dialog-Footer"']);
+	const dialogFooter = dialogContainer.querySelector(['[class^="prc-Dialog-Footer"]', '[class*=" prc-Dialog-Footer"']) || [...dialogContainer.children].findLast((el) => (el.ariaHidden || 'false') === 'false');
 	const submitButton = dialogFooter?.querySelector('button[data-variant="primary"]');
 	if (!submitButton) {
 		throw new Error('Could not find submit button');
@@ -166,8 +166,7 @@ function replaceNewCheckboxes(radioGroupFieldset: HTMLFieldSetElement): void {
 			parent.querySelector('label')
 		);
 		const tooltipElement = ($([
-			'[class*=" ReviewMenuButton-module__RadioText--"]',
-			'[class^="ReviewMenuButton-module__RadioText--"]',
+			'[class*="__RadioText"]',
 		], parent) ?? (labelElement ?? parent).lastElementChild);
 		const tooltip = tooltipElement.textContent.trim().replace(/\.$/, '');
 		const labelSpan = [...(labelElement ?? parent).children].find(element => element !== tooltipElement);
@@ -208,7 +207,7 @@ function replaceNewCheckboxes(radioGroupFieldset: HTMLFieldSetElement): void {
 function init(signal: AbortSignal): void {
 	// The selector excludes the "Cancel" button
 	observe('#review-changes-modal [type="submit"]:not([name])', replaceCheckboxes, {signal});
-	observe(['fieldset[class*=" ReviewMenuButton"]', 'fieldset[class^="ReviewMenuButton"]'], replaceNewCheckboxes, {signal});
+	observe(['fieldset[class*=" ReviewTypeSelector"]', 'fieldset[class^="ReviewTypeSelector"]'], replaceNewCheckboxes, {signal});
 	delegate('#review-changes-modal form', 'submit', blockDuplicateSubmissions, {signal});
 }
 
