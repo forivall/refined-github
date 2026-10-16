@@ -16,6 +16,11 @@ function underlineSelfReference(link: HTMLAnchorElement): void {
 
 	// TODO [2027-01-01]: Use shorthand `text-decoration` property (due to Safari 18)
 	link.style.textDecorationLine = 'underline';
+	if (link.matches(
+		':is([class^=referencedCommitContainer], [class*=" referencedCommitContainer"]) .markdown-body a',
+	)) {
+		return;
+	}
 	link.style.textDecorationStyle = 'wavy';
 	link.style.textDecorationColor = 'red';
 }
